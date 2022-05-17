@@ -98,7 +98,37 @@ def main():
 
     # STUDENT IMPLEMENTATION here
 
-    px_array = px_array_r
+    # Compute greyscale from RGB
+
+    greyscale_pixel_array = createInitializedGreyscalePixelArray(image_width, image_height)
+
+    for r in range(image_height):
+        for c in range(image_width):
+            greyvalue = px_array_r[r][c] * 0.299 + px_array_g[r][c] * 0.587
+            greyvalue = round(greyvalue + px_array_b[r][c] * 0.114)
+            greyscale_pixel_array[r][c] = greyvalue
+    print("greyscale done")
+
+    # Stretch to 0 - 255
+    stretched_array = createInitializedGreyscalePixelArray(image_width, image_height)
+    maximum = minimum = greyscale_pixel_array[0][0]
+    for r in range(image_height):
+        for c in range(image_width):
+            if greyscale_pixel_array[r][c] > maximum:
+                maximum = greyscale_pixel_array[r][c]
+            elif greyscale_pixel_array[r][c] < minimum:
+                minimum = greyscale_pixel_array[r][c]
+
+    if maximum != minimum:
+        a = 255 / (maximum - minimum)
+        for r in range(image_height):
+            for c in range(image_width):
+                stretched_array[r][c] = round((greyscale_pixel_array[r][c] - minimum) * a)
+    print("stretch done")
+
+    #  STUDENT IMPLEMENTATION END
+
+    px_array = stretched_array
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
     center_x = image_width / 2.0

@@ -51,15 +51,17 @@ def createInitializedGreyscalePixelArray(image_width, image_height, initValue = 
 
 
 def computeHistogram(pixel_array, image_width, image_height, nr_bins):
-
     histogram = [0.0 for i in range(nr_bins)]
+    a = 255 / nr_bins
 
-    # your task to compute the correct histogram!
-
-    # incorrect histogram
-    histogram[0] = 10
-    histogram[32] = 15
-    histogram[63] = 10
+    for r in range(image_height):
+        for c in range(image_width):
+            binNum = int(pixel_array[r][c] // a)
+            if (binNum < 0):
+                binNum = 0
+            elif (binNum >= nr_bins):
+                binNum = nr_bins - 1
+            histogram[binNum] += 1
 
     return histogram
 
