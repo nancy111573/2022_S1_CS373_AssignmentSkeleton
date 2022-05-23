@@ -53,6 +53,24 @@ def createInitializedGreyscalePixelArray(image_width, image_height, initValue=0)
     new_array = [[initValue for x in range(image_width)] for y in range(image_height)]
     return new_array
 
+def stretch(anArray, image_height, image_width):
+    # Stretch to 0 - 255
+    stretched_array = createInitializedGreyscalePixelArray(image_width, image_height)
+    maximum = minimum = anArray[0][0]
+    for r in range(image_height):
+        for c in range(image_width):
+            if anArray[r][c] > maximum:
+                maximum = anArray[r][c]
+            elif anArray[r][c] < minimum:
+                minimum = anArray[r][c]
+
+    if maximum != minimum:
+        a = 255 / (maximum - minimum)
+        for r in range(image_height):
+            for c in range(image_width):
+                stretched_array[r][c] = round((anArray[r][c] - minimum) * a)
+    return stretched_array
+
 
 # This is our code skeleton that performs the license plate detection.
 # Feel free to try it on your own images of cars, but keep in mind that with our algorithm developed in this lecture,
@@ -104,21 +122,7 @@ def main():
             greyscale_pixel_array[r][c] = greyvalue
     print("greyscale done")
 
-    # Stretch to 0 - 255
-    stretched_array = createInitializedGreyscalePixelArray(image_width, image_height)
-    maximum = minimum = greyscale_pixel_array[0][0]
-    for r in range(image_height):
-        for c in range(image_width):
-            if greyscale_pixel_array[r][c] > maximum:
-                maximum = greyscale_pixel_array[r][c]
-            elif greyscale_pixel_array[r][c] < minimum:
-                minimum = greyscale_pixel_array[r][c]
-
-    if maximum != minimum:
-        a = 255 / (maximum - minimum)
-        for r in range(image_height):
-            for c in range(image_width):
-                stretched_array[r][c] = round((greyscale_pixel_array[r][c] - minimum) * a)
+    stretched_array = stretch(greyscale_pixel_array, image_height, image_width)
     print("stretch done")
 
     # computer standard deviation (5 x 5)
@@ -152,14 +156,27 @@ def main():
             temp += pow(stretched_array[r + 2][c - 1] - avg, 2)
             temp += pow(stretched_array[r + 2][c] - avg, 2)
             temp += pow(stretched_array[r + 2][c + 1] - avg, 2)
-            temp = temp /25
+            temp = temp / 25
             sd_array[r][c] = math.sqrt(temp)
-
     print("standard deviation done")
+
+    # stretch high contrast image to 0 to 255 range
+    secondStretch = stretch(sd_array, image_height, image_width)
+    print("stretched again")
+
+    # compute image by threshold to get high contrast area
+    threshold = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
+    for r in range(image_height):
+        for c in range(image_width):
+            if secondStretch[r][c] < 150:
+                threshold[r][c] = 0
+            else:
+                threshold[r][c] = 255
+    print("threshold done")
 
     #  STUDENT IMPLEMENTATION END
 
-    px_array = sd_array
+    px_array = threshold
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
     center_x = image_width / 2.0
