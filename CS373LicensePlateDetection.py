@@ -128,6 +128,35 @@ def getThresholdArray(anArray, image_width, image_height, threshold):
                 threshold_array[r][c] = 255
     return threshold_array
 
+# get non-cumulative histogram from input image (255 bins)
+def computeHistogram(pixel_array, image_width, image_height):
+    histogram = [0.0 for i in range(255)]
+    for r in range(image_height):
+        for c in range(image_width):
+            histogram[pixel_array[r][c]-1] += 1
+    return histogram
+
+# EXTENSION: calculate threshold from input image
+def getThreshold(anArray, image_height, image_width):
+    Hq = computeHistogram(anArray, image_width, image_height)
+    qHq = [0.0 for x in range(len(Hq))]
+    previous = 0
+    for x in range(len(Hq)):
+        qHq[x] = x * Hq[x]
+    threshold = int(math.ceil(sum(qHq) / sum(Hq)))
+    while threshold != previous:
+        previous = threshold
+        objects = background = NumObjects = NumBackground = 0
+        for obj in range(previous):
+            NumObjects += Hq[obj]
+            objects += qHq[obj]
+        for bg in range(previous, len(Hq)):
+            NumBackground += Hq[bg]
+            background += qHq[bg]
+        threshold = int(math.ceil((objects/NumObjects + background/NumBackground)/2))
+        print(previous, threshold)
+    return threshold
+
 
 # This is our code skeleton that performs the license plate detection.
 # Feel free to try it on your own images of cars, but keep in mind that with our algorithm developed in this lecture,
@@ -182,7 +211,8 @@ def main():
     print("stretched again")
 
     # calculate threshold
-    threshold = 150
+    threshold = getThreshold(greyscale_pixel_array, image_height, image_width)
+    print("calculated threshold = ", threshold)
 
     threshold_array = getThresholdArray(secondStretch, image_width, image_height, threshold)
     print("threshold_array done")
