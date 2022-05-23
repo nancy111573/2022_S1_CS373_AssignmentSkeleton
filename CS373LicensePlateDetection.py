@@ -53,8 +53,18 @@ def createInitializedGreyscalePixelArray(image_width, image_height, initValue=0)
     new_array = [[initValue for x in range(image_width)] for y in range(image_height)]
     return new_array
 
+# Compute greyscale from RGB
+def getGreyScale(px_array_r, px_array_g, px_array_b, image_width, image_height):
+    greyscale_pixel_array = createInitializedGreyscalePixelArray(image_width, image_height)
+    for r in range(image_height):
+        for c in range(image_width):
+            greyvalue = px_array_r[r][c] * 0.299 + px_array_g[r][c] * 0.587
+            greyvalue = round(greyvalue + px_array_b[r][c] * 0.114)
+            greyscale_pixel_array[r][c] = greyvalue
+    return greyscale_pixel_array
+
+# Stretch to 0 - 255
 def stretch(anArray, image_height, image_width):
-    # Stretch to 0 - 255
     stretched_array = createInitializedGreyscalePixelArray(image_width, image_height)
     maximum = minimum = anArray[0][0]
     for r in range(image_height):
@@ -70,6 +80,53 @@ def stretch(anArray, image_height, image_width):
             for c in range(image_width):
                 stretched_array[r][c] = round((anArray[r][c] - minimum) * a)
     return stretched_array
+
+# computer standard deviation (5 x 5)
+def getStandardDeviation(stretched_array, image_width, image_height):
+    sd_array = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
+    for r in range(2, image_height - 2):
+        for c in range(2, image_width - 2):
+            avg = stretched_array[r - 2][c - 2] + stretched_array[r - 2][c - 1] + stretched_array[r - 2][c] + \
+                  stretched_array[r - 2][c + 1] + stretched_array[r - 2][c + 2]
+            avg += stretched_array[r - 1][c - 2] + stretched_array[r - 1][c - 1] + stretched_array[r - 1][c] + \
+                   stretched_array[r - 1][c + 1] + stretched_array[r - 1][c + 2]
+            avg += stretched_array[r][c - 2] + stretched_array[r][c - 1] + stretched_array[r][c] + stretched_array[r][
+                c + 1] + stretched_array[r][c + 2]
+            avg += stretched_array[r + 1][c - 2] + stretched_array[r + 1][c - 1] + stretched_array[r + 1][c] + \
+                   stretched_array[r + 1][c + 1] + stretched_array[r + 1][c + 2]
+            avg += stretched_array[r + 2][c - 2] + stretched_array[r + 2][c - 1] + stretched_array[r + 2][c] + \
+                   stretched_array[r + 2][c + 1] + stretched_array[r + 2][c + 2]
+            avg = avg / 25
+
+            temp = pow(stretched_array[r - 2][c - 1] - avg, 2)
+            temp += pow(stretched_array[r - 2][c] - avg, 2)
+            temp += pow(stretched_array[r - 2][c + 1] - avg, 2)
+            temp += pow(stretched_array[r - 1][c - 1] - avg, 2)
+            temp += pow(stretched_array[r - 1][c] - avg, 2)
+            temp += pow(stretched_array[r - 1][c + 1] - avg, 2)
+            temp += pow(stretched_array[r][c - 1] - avg, 2)
+            temp += pow(stretched_array[r][c] - avg, 2)
+            temp += pow(stretched_array[r][c + 1] - avg, 2)
+            temp += pow(stretched_array[r + 1][c - 1] - avg, 2)
+            temp += pow(stretched_array[r + 1][c] - avg, 2)
+            temp += pow(stretched_array[r + 1][c + 1] - avg, 2)
+            temp += pow(stretched_array[r + 2][c - 1] - avg, 2)
+            temp += pow(stretched_array[r + 2][c] - avg, 2)
+            temp += pow(stretched_array[r + 2][c + 1] - avg, 2)
+            temp = temp / 25
+            sd_array[r][c] = math.sqrt(temp)
+    return sd_array
+
+# compute image by threshold to get high contrast area
+def getThresholdArray(anArray, image_width, image_height, threshold):
+    threshold_array = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
+    for r in range(image_height):
+        for c in range(image_width):
+            if anArray[r][c] < threshold:
+                threshold_array[r][c] = 0
+            else:
+                threshold_array[r][c] = 255
+    return threshold_array
 
 
 # This is our code skeleton that performs the license plate detection.
@@ -111,72 +168,28 @@ def main():
 
     # STUDENT IMPLEMENTATION here
 
-    # Compute greyscale from RGB
-
-    greyscale_pixel_array = createInitializedGreyscalePixelArray(image_width, image_height)
-
-    for r in range(image_height):
-        for c in range(image_width):
-            greyvalue = px_array_r[r][c] * 0.299 + px_array_g[r][c] * 0.587
-            greyvalue = round(greyvalue + px_array_b[r][c] * 0.114)
-            greyscale_pixel_array[r][c] = greyvalue
+    greyscale_pixel_array = getGreyScale(px_array_r, px_array_g, px_array_b, image_width, image_height)
     print("greyscale done")
 
     stretched_array = stretch(greyscale_pixel_array, image_height, image_width)
     print("stretch done")
 
-    # computer standard deviation (5 x 5)
-    sd_array = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
-    for r in range(2, image_height - 2):
-        for c in range(2, image_width - 2):
-            avg = stretched_array[r - 2][c - 2] + stretched_array[r - 2][c - 1] + stretched_array[r - 2][c] + \
-                  stretched_array[r - 2][c + 1] + stretched_array[r - 2][c + 2]
-            avg += stretched_array[r - 1][c - 2] + stretched_array[r - 1][c - 1] + stretched_array[r - 1][c] + \
-                   stretched_array[r - 1][c + 1] + stretched_array[r - 1][c + 2]
-            avg += stretched_array[r][c - 2] + stretched_array[r][c - 1] + stretched_array[r][c] + stretched_array[r][
-                c + 1] + stretched_array[r][c + 2]
-            avg += stretched_array[r + 1][c - 2] + stretched_array[r + 1][c - 1] + stretched_array[r + 1][c] + \
-                   stretched_array[r + 1][c + 1] + stretched_array[r + 1][c + 2]
-            avg += stretched_array[r + 2][c - 2] + stretched_array[r + 2][c - 1] + stretched_array[r + 2][c] + \
-                   stretched_array[r + 2][c + 1] + stretched_array[r + 2][c + 2]
-            avg = avg / 25
-
-            temp = pow(stretched_array[r - 2][c - 1] - avg, 2)
-            temp += pow(stretched_array[r - 2][c] - avg, 2)
-            temp += pow(stretched_array[r - 2][c + 1] - avg, 2)
-            temp += pow(stretched_array[r - 1][c - 1] - avg, 2)
-            temp += pow(stretched_array[r - 1][c] - avg, 2)
-            temp += pow(stretched_array[r - 1][c + 1] - avg, 2)
-            temp += pow(stretched_array[r][c - 1] - avg, 2)
-            temp += pow(stretched_array[r][c] - avg, 2)
-            temp += pow(stretched_array[r][c + 1] - avg, 2)
-            temp += pow(stretched_array[r + 1][c - 1] - avg, 2)
-            temp += pow(stretched_array[r + 1][c] - avg, 2)
-            temp += pow(stretched_array[r + 1][c + 1] - avg, 2)
-            temp += pow(stretched_array[r + 2][c - 1] - avg, 2)
-            temp += pow(stretched_array[r + 2][c] - avg, 2)
-            temp += pow(stretched_array[r + 2][c + 1] - avg, 2)
-            temp = temp / 25
-            sd_array[r][c] = math.sqrt(temp)
+    sd_array = getStandardDeviation(stretched_array, image_width, image_height)
     print("standard deviation done")
 
     # stretch high contrast image to 0 to 255 range
     secondStretch = stretch(sd_array, image_height, image_width)
     print("stretched again")
 
-    # compute image by threshold to get high contrast area
-    threshold = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
-    for r in range(image_height):
-        for c in range(image_width):
-            if secondStretch[r][c] < 150:
-                threshold[r][c] = 0
-            else:
-                threshold[r][c] = 255
-    print("threshold done")
+    # calculate threshold
+    threshold = 150
+
+    threshold_array = getThresholdArray(secondStretch, image_width, image_height, threshold)
+    print("threshold_array done")
 
     #  STUDENT IMPLEMENTATION END
 
-    px_array = threshold
+    px_array = threshold_array
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
     center_x = image_width / 2.0
