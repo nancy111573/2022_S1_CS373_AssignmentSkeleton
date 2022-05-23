@@ -8,9 +8,9 @@ from matplotlib.patches import Rectangle
 # import our basic, light-weight png reader library
 import imageIO.png
 
+
 # this function reads an RGB color png file and returns width, height, as well as pixel arrays for r,g,b
 def readRGBImageToSeparatePixelArrays(input_filename):
-
     image_reader = imageIO.png.Reader(filename=input_filename)
     # png reader gives us width and height, as well as RGB data in image_rows (a list of rows of RGB triplets)
     (image_width, image_height, rgb_image_rows, rgb_image_info) = image_reader.read()
@@ -49,18 +49,15 @@ def readRGBImageToSeparatePixelArrays(input_filename):
 
 
 # a useful shortcut method to create a list of lists based array representation for an image, initialized with a value
-def createInitializedGreyscalePixelArray(image_width, image_height, initValue = 0):
-
+def createInitializedGreyscalePixelArray(image_width, image_height, initValue=0):
     new_array = [[initValue for x in range(image_width)] for y in range(image_height)]
     return new_array
-
 
 
 # This is our code skeleton that performs the license plate detection.
 # Feel free to try it on your own images of cars, but keep in mind that with our algorithm developed in this lecture,
 # we won't detect arbitrary or difficult to detect license plates!
 def main():
-
     command_line_arguments = sys.argv[1:]
 
     SHOW_DEBUG_FIGURES = True
@@ -81,7 +78,6 @@ def main():
     if len(command_line_arguments) == 2:
         output_filename = Path(command_line_arguments[1])
 
-
     # we read in the png file, and receive three pixel arrays for red, green and blue components, respectively
     # each pixel array contains 8 bit integer values between 0 and 255 encoding the color values
     (image_width, image_height, px_array_r, px_array_g, px_array_b) = readRGBImageToSeparatePixelArrays(input_filename)
@@ -94,7 +90,6 @@ def main():
     axs1[0, 1].imshow(px_array_g, cmap='gray')
     axs1[1, 0].set_title('Input blue channel of image')
     axs1[1, 0].imshow(px_array_b, cmap='gray')
-
 
     # STUDENT IMPLEMENTATION here
 
@@ -126,9 +121,45 @@ def main():
                 stretched_array[r][c] = round((greyscale_pixel_array[r][c] - minimum) * a)
     print("stretch done")
 
+    # computer standard deviation (5 x 5)
+    sd_array = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
+    for r in range(2, image_height - 2):
+        for c in range(2, image_width - 2):
+            avg = stretched_array[r - 2][c - 2] + stretched_array[r - 2][c - 1] + stretched_array[r - 2][c] + \
+                  stretched_array[r - 2][c + 1] + stretched_array[r - 2][c + 2]
+            avg += stretched_array[r - 1][c - 2] + stretched_array[r - 1][c - 1] + stretched_array[r - 1][c] + \
+                   stretched_array[r - 1][c + 1] + stretched_array[r - 1][c + 2]
+            avg += stretched_array[r][c - 2] + stretched_array[r][c - 1] + stretched_array[r][c] + stretched_array[r][
+                c + 1] + stretched_array[r][c + 2]
+            avg += stretched_array[r + 1][c - 2] + stretched_array[r + 1][c - 1] + stretched_array[r + 1][c] + \
+                   stretched_array[r + 1][c + 1] + stretched_array[r + 1][c + 2]
+            avg += stretched_array[r + 2][c - 2] + stretched_array[r + 2][c - 1] + stretched_array[r + 2][c] + \
+                   stretched_array[r + 2][c + 1] + stretched_array[r + 2][c + 2]
+            avg = avg / 25
+
+            temp = pow(stretched_array[r - 2][c - 1] - avg, 2)
+            temp += pow(stretched_array[r - 2][c] - avg, 2)
+            temp += pow(stretched_array[r - 2][c + 1] - avg, 2)
+            temp += pow(stretched_array[r - 1][c - 1] - avg, 2)
+            temp += pow(stretched_array[r - 1][c] - avg, 2)
+            temp += pow(stretched_array[r - 1][c + 1] - avg, 2)
+            temp += pow(stretched_array[r][c - 1] - avg, 2)
+            temp += pow(stretched_array[r][c] - avg, 2)
+            temp += pow(stretched_array[r][c + 1] - avg, 2)
+            temp += pow(stretched_array[r + 1][c - 1] - avg, 2)
+            temp += pow(stretched_array[r + 1][c] - avg, 2)
+            temp += pow(stretched_array[r + 1][c + 1] - avg, 2)
+            temp += pow(stretched_array[r + 2][c - 1] - avg, 2)
+            temp += pow(stretched_array[r + 2][c] - avg, 2)
+            temp += pow(stretched_array[r + 2][c + 1] - avg, 2)
+            temp = temp /25
+            sd_array[r][c] = math.sqrt(temp)
+
+    print("standard deviation done")
+
     #  STUDENT IMPLEMENTATION END
 
-    px_array = stretched_array
+    px_array = sd_array
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
     center_x = image_width / 2.0
@@ -138,18 +169,12 @@ def main():
     bbox_min_y = center_y - image_height / 4.0
     bbox_max_y = center_y + image_height / 4.0
 
-
-
-
-
     # Draw a bounding box as a rectangle into the input image
     axs1[1, 1].set_title('Final image of detection')
     axs1[1, 1].imshow(px_array, cmap='gray')
     rect = Rectangle((bbox_min_x, bbox_min_y), bbox_max_x - bbox_min_x, bbox_max_y - bbox_min_y, linewidth=1,
                      edgecolor='g', facecolor='none')
     axs1[1, 1].add_patch(rect)
-
-
 
     # write the output image into output_filename, using the matplotlib savefig method
     extent = axs1[1, 1].get_window_extent().transformed(fig1.dpi_scale_trans.inverted())
