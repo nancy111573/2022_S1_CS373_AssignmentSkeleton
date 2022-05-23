@@ -99,20 +99,13 @@ def getStandardDeviation(stretched_array, image_width, image_height):
             avg = avg / 25
 
             temp = pow(stretched_array[r - 2][c - 1] - avg, 2)
-            temp += pow(stretched_array[r - 2][c] - avg, 2)
-            temp += pow(stretched_array[r - 2][c + 1] - avg, 2)
-            temp += pow(stretched_array[r - 1][c - 1] - avg, 2)
-            temp += pow(stretched_array[r - 1][c] - avg, 2)
-            temp += pow(stretched_array[r - 1][c + 1] - avg, 2)
-            temp += pow(stretched_array[r][c - 1] - avg, 2)
-            temp += pow(stretched_array[r][c] - avg, 2)
-            temp += pow(stretched_array[r][c + 1] - avg, 2)
-            temp += pow(stretched_array[r + 1][c - 1] - avg, 2)
-            temp += pow(stretched_array[r + 1][c] - avg, 2)
-            temp += pow(stretched_array[r + 1][c + 1] - avg, 2)
-            temp += pow(stretched_array[r + 2][c - 1] - avg, 2)
-            temp += pow(stretched_array[r + 2][c] - avg, 2)
-            temp += pow(stretched_array[r + 2][c + 1] - avg, 2)
+            temp += pow(stretched_array[r - 2][c] - avg, 2) + pow(stretched_array[r - 2][c + 1] - avg, 2)
+            temp += pow(stretched_array[r - 1][c - 1] - avg, 2) + pow(stretched_array[r - 1][c] - avg, 2)
+            temp += pow(stretched_array[r - 1][c + 1] - avg, 2) + pow(stretched_array[r][c - 1] - avg, 2)
+            temp += pow(stretched_array[r][c] - avg, 2) + pow(stretched_array[r][c + 1] - avg, 2)
+            temp += pow(stretched_array[r + 1][c - 1] - avg, 2) + pow(stretched_array[r + 1][c] - avg, 2)
+            temp += pow(stretched_array[r + 1][c + 1] - avg, 2) + pow(stretched_array[r + 2][c - 1] - avg, 2)
+            temp += pow(stretched_array[r + 2][c] - avg, 2) + pow(stretched_array[r + 2][c + 1] - avg, 2)
             temp = temp / 25
             sd_array[r][c] = math.sqrt(temp)
     return sd_array
@@ -130,7 +123,7 @@ def getThresholdArray(anArray, image_width, image_height, threshold):
 
 # get non-cumulative histogram from input image (255 bins)
 def computeHistogram(pixel_array, image_width, image_height):
-    histogram = [0.0 for i in range(255)]
+    histogram = [0.0 for i in range(256)]
     for r in range(image_height):
         for c in range(image_width):
             histogram[pixel_array[r][c]-1] += 1
@@ -154,7 +147,6 @@ def getThreshold(anArray, image_height, image_width):
             NumBackground += Hq[bg]
             background += qHq[bg]
         threshold = int(math.ceil((objects/NumObjects + background/NumBackground)/2))
-        print(previous, threshold)
     return threshold
 
 
@@ -167,7 +159,7 @@ def main():
     SHOW_DEBUG_FIGURES = True
 
     # this is the default input image filename
-    input_filename = "numberplate1.png"
+    input_filename = "numberplate6.png"
 
     if command_line_arguments != []:
         input_filename = command_line_arguments[0]
@@ -187,7 +179,7 @@ def main():
     (image_width, image_height, px_array_r, px_array_g, px_array_b) = readRGBImageToSeparatePixelArrays(input_filename)
 
     # setup the plots for intermediate results in a figure
-    fig1, axs1 = pyplot.subplots(2, 2)
+    fig1, axs1 = pyplot.subplots(3, 2)
     axs1[0, 0].set_title('Input red channel of image')
     axs1[0, 0].imshow(px_array_r, cmap='gray')
     axs1[0, 1].set_title('Input green channel of image')
@@ -219,6 +211,7 @@ def main():
 
     #  STUDENT IMPLEMENTATION END
 
+    oneFivty = getThresholdArray(secondStretch, image_width, image_height, 150)
     px_array = threshold_array
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
@@ -230,11 +223,16 @@ def main():
     bbox_max_y = center_y + image_height / 4.0
 
     # Draw a bounding box as a rectangle into the input image
-    axs1[1, 1].set_title('Final image of detection')
+    # Final image of detection
+    axs1[1, 1].set_title('adaptive threshold')
     axs1[1, 1].imshow(px_array, cmap='gray')
     rect = Rectangle((bbox_min_x, bbox_min_y), bbox_max_x - bbox_min_x, bbox_max_y - bbox_min_y, linewidth=1,
                      edgecolor='g', facecolor='none')
     axs1[1, 1].add_patch(rect)
+
+    # Draw threshold = 150
+    axs1[2, 1].set_title('150 threshold')
+    axs1[2, 1].imshow(oneFivty, cmap='gray')
 
     # write the output image into output_filename, using the matplotlib savefig method
     extent = axs1[1, 1].get_window_extent().transformed(fig1.dpi_scale_trans.inverted())
