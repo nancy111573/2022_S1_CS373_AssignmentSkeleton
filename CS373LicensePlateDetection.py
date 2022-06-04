@@ -176,6 +176,58 @@ def computeErosion8Nbh3x3FlatSE(pixel_array, image_width, image_height):
                         result[r][c] = 1
     return result
 
+# get connected components
+def computeConnectedComponentLabeling(pixel_array, image_width, image_height):
+    result = createInitializedGreyscalePixelArray(image_width, image_height)
+    components = {}
+    visited = {}
+    count = 1
+    for r in range(image_height):
+        for c in range(image_width):
+            if pixel_array[r][c] != 0 and (r not in visited or c not in visited[r]):
+                queue = []
+                queue.append((r, c))
+                components[count] = 0
+                if r in visited:
+                    visited[r].append(c)
+                else:
+                    visited[r] = [c]
+                while len(queue) != 0:
+                    (c1, c2) = queue.pop(0)
+                    result[c1][c2] = count
+                    components[count] += 1
+
+                    if c1 not in visited:
+                        if c2 > 0 and pixel_array[c1][c2 - 1] != 0:
+                            queue.append((c1, c2 - 1))
+                            visited[c1] = [c2 - 1]
+                        elif c2 < image_width - 1 and pixel_array[c1][c2 + 1] != 0:
+                            queue.append((c1, c2 + 1))
+                            visited[c1] = [c2 + 1]
+                    elif c2 > 0 and c2 - 1 not in visited[c1] and pixel_array[c1][c2 - 1] != 0:
+                        queue.append((c1, c2 - 1))
+                        visited[c1].append(c2 - 1)
+                    elif c2 < image_width - 1 and c2 + 1 not in visited[c1] and pixel_array[c1][c2 + 1] != 0:
+                        queue.append((c1, c2 + 1))
+                        visited[c1].append(c2 + 1)
+
+                    if c1 > 0 and pixel_array[c1 - 1][c2] != 0:
+                        if c1 - 1 not in visited:
+                            queue.append((c1 - 1, c2))
+                            visited[c1 - 1] = [c2]
+                        elif c2 not in visited[c1 - 1]:
+                            queue.append((c1 - 1, c2))
+                            visited[c1 - 1].append(c2)
+                    if c1 < image_height - 1 and pixel_array[c1 + 1][c2] != 0:
+                        if c1 + 1 not in visited:
+                            queue.append((c1 + 1, c2))
+                            visited[c1 + 1] = [c2]
+                        elif c2 not in visited[c1 + 1]:
+                            queue.append((c1 + 1, c2))
+                            visited[c1 + 1].append(c2)
+                count += 1
+    return result, components
+
 
 # This is our code skeleton that performs the license plate detection.
 # Feel free to try it on your own images of cars, but keep in mind that with our algorithm developed in this lecture,
@@ -186,7 +238,7 @@ def main():
     SHOW_DEBUG_FIGURES = True
 
     # this is the default input image filename
-    input_filename = "numberplate5.png"
+    input_filename = "numberplate3.png"
 
     if command_line_arguments != []:
         input_filename = command_line_arguments[0]
@@ -226,31 +278,57 @@ def main():
     print("standard deviation done")
 
     # stretch high contrast image to 0 to 255 range
-    secondStretch = stretch(sd_array, image_height, image_width)
+    second_stretch = stretch(sd_array, image_height, image_width)
+    print("stretched again")
+
+    sd_array = getStandardDeviation(second_stretch, image_width, image_height)
+    print("standard deviation done")
+
+    # stretch high contrast image to 0 to 255 range
+    second_stretch = stretch(sd_array, image_height, image_width)
     print("stretched again")
 
     # calculate threshold
-    threshold = getThreshold(secondStretch, image_height, image_width)
+    threshold = getThreshold(second_stretch, image_height, image_width)
     print("calculated threshold = ", threshold)
 
-    threshold_array = getThresholdArray(secondStretch, image_width, image_height, threshold)
+    threshold_array = getThresholdArray(second_stretch, image_width, image_height, 150)
     print("threshold_array done")
 
     dilated_array = computeDilation8Nbh3x3FlatSE(threshold_array, image_width, image_height)
     dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
     dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
     dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    print("dilation x 4")
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    print("dilation x 11")
 
     eroded_array = computeErosion8Nbh3x3FlatSE(dilated_array, image_width, image_height)
     eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
     eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
-    print("erosion x 3")
+    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
+    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
+    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
+    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
+    print("erosion x 7")
+
+    connectedComponents, dict = computeConnectedComponentLabeling(eroded_array, image_width, image_height)
+    print(dict)
+
+    max_key = max(dict, key=dict.get)
+    for r in range(image_height):
+        for c in range(image_width):
+            if connectedComponents[r][c] != max_key:
+                connectedComponents[r][c] = 0
 
     #  STUDENT IMPLEMENTATION END
 
-    # oneFivty = getThresholdArray(secondStretch, image_width, image_height, 150)
-    px_array = eroded_array
+    px_array = connectedComponents
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
     center_x = image_width / 2.0
