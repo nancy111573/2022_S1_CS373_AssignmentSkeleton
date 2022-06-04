@@ -83,7 +83,7 @@ def stretch(anArray, image_height, image_width):
 
 # computer standard deviation (5 x 5)
 def getStandardDeviation(stretched_array, image_width, image_height):
-    sd_array = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
+    sd_array = createInitializedGreyscalePixelArray(image_width, image_height, 0)
     for r in range(2, image_height - 2):
         for c in range(2, image_width - 2):
             avg = stretched_array[r - 2][c - 2] + stretched_array[r - 2][c - 1] + stretched_array[r - 2][c] + \
@@ -107,7 +107,7 @@ def getStandardDeviation(stretched_array, image_width, image_height):
             temp += pow(stretched_array[r + 1][c + 1] - avg, 2) + pow(stretched_array[r + 2][c - 1] - avg, 2)
             temp += pow(stretched_array[r + 2][c] - avg, 2) + pow(stretched_array[r + 2][c + 1] - avg, 2)
             temp = temp / 25
-            sd_array[r][c] = math.sqrt(temp)
+            sd_array[r][c] = int(math.sqrt(temp))
     return sd_array
 
 # compute image by threshold to get high contrast area
@@ -129,7 +129,7 @@ def computeHistogram(pixel_array, image_width, image_height):
             histogram[pixel_array[r][c]-1] += 1
     return histogram
 
-# EXTENSION: calculate threshold from input image
+# EXTENSION: calculate adaptive threshold from input image
 def getThreshold(anArray, image_height, image_width):
     Hq = computeHistogram(anArray, image_width, image_height)
     qHq = [0.0 for x in range(len(Hq))]
@@ -149,6 +149,33 @@ def getThreshold(anArray, image_height, image_width):
         threshold = int(math.ceil((objects/NumObjects + background/NumBackground)/2))
     return threshold
 
+# 3x3 dilation
+def computeDilation8Nbh3x3FlatSE(pixel_array, image_width, image_height):
+    result = createInitializedGreyscalePixelArray(image_width, image_height)
+    padding = createInitializedGreyscalePixelArray(image_width + 2, image_height + 2)
+    for r in range(image_height):
+        for c in range(image_width):
+            padding[r + 1][c + 1] = pixel_array[r][c]
+    for r in range(image_height):
+        for c in range(image_width):
+            result[r][c] = 1
+            if padding[r][c] == 0 and padding[r + 1][c] == 0 and padding[r + 2][c] == 0:
+                if padding[r][c + 1] == 0 and padding[r + 1][c + 1] == 0 and padding[r + 2][c + 1] == 0:
+                    if padding[r][c + 2] == 0 and padding[r + 1][c + 2] == 0 and padding[r + 2][c + 2] == 0:
+                        result[r][c] = 0
+    return result
+
+# 3x3 erosion
+def computeErosion8Nbh3x3FlatSE(pixel_array, image_width, image_height):
+    result = createInitializedGreyscalePixelArray(image_width, image_height)
+    for r in range(1, image_height-1):
+        for c in range(1, image_width-1):
+            if pixel_array[r][c] != 0 and pixel_array[r-1][c] != 0 and pixel_array[r+1][c] != 0:
+                if pixel_array[r][c-1] != 0 and pixel_array[r-1][c-1] != 0 and pixel_array[r+1][c-1] != 0:
+                    if pixel_array[r][c+1] != 0 and pixel_array[r-1][c+1] != 0 and pixel_array[r+1][c+1] != 0:
+                        result[r][c] = 1
+    return result
+
 
 # This is our code skeleton that performs the license plate detection.
 # Feel free to try it on your own images of cars, but keep in mind that with our algorithm developed in this lecture,
@@ -159,7 +186,7 @@ def main():
     SHOW_DEBUG_FIGURES = True
 
     # this is the default input image filename
-    input_filename = "numberplate6.png"
+    input_filename = "numberplate5.png"
 
     if command_line_arguments != []:
         input_filename = command_line_arguments[0]
@@ -179,7 +206,7 @@ def main():
     (image_width, image_height, px_array_r, px_array_g, px_array_b) = readRGBImageToSeparatePixelArrays(input_filename)
 
     # setup the plots for intermediate results in a figure
-    fig1, axs1 = pyplot.subplots(3, 2)
+    fig1, axs1 = pyplot.subplots(2, 2)
     axs1[0, 0].set_title('Input red channel of image')
     axs1[0, 0].imshow(px_array_r, cmap='gray')
     axs1[0, 1].set_title('Input green channel of image')
@@ -203,16 +230,27 @@ def main():
     print("stretched again")
 
     # calculate threshold
-    threshold = getThreshold(greyscale_pixel_array, image_height, image_width)
+    threshold = getThreshold(secondStretch, image_height, image_width)
     print("calculated threshold = ", threshold)
 
     threshold_array = getThresholdArray(secondStretch, image_width, image_height, threshold)
     print("threshold_array done")
 
+    dilated_array = computeDilation8Nbh3x3FlatSE(threshold_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    print("dilation x 4")
+
+    eroded_array = computeErosion8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
+    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
+    print("erosion x 3")
+
     #  STUDENT IMPLEMENTATION END
 
-    oneFivty = getThresholdArray(secondStretch, image_width, image_height, 150)
-    px_array = threshold_array
+    # oneFivty = getThresholdArray(secondStretch, image_width, image_height, 150)
+    px_array = eroded_array
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
     center_x = image_width / 2.0
@@ -224,15 +262,15 @@ def main():
 
     # Draw a bounding box as a rectangle into the input image
     # Final image of detection
-    axs1[1, 1].set_title('adaptive threshold')
+    axs1[1, 1].set_title('Final image of detection')
     axs1[1, 1].imshow(px_array, cmap='gray')
     rect = Rectangle((bbox_min_x, bbox_min_y), bbox_max_x - bbox_min_x, bbox_max_y - bbox_min_y, linewidth=1,
                      edgecolor='g', facecolor='none')
     axs1[1, 1].add_patch(rect)
 
-    # Draw threshold = 150
-    axs1[2, 1].set_title('150 threshold')
-    axs1[2, 1].imshow(oneFivty, cmap='gray')
+    # # Draw threshold = 150
+    # axs1[2, 1].set_title('150 threshold')
+    # axs1[2, 1].imshow(oneFivty, cmap='gray')
 
     # write the output image into output_filename, using the matplotlib savefig method
     extent = axs1[1, 1].get_window_extent().transformed(fig1.dpi_scale_trans.inverted())
