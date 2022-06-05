@@ -247,7 +247,7 @@ def main():
     SHOW_DEBUG_FIGURES = True
 
     # this is the default input image filename
-    input_filename = "numberplate6.png"
+    input_filename = "numberplate1.png"
 
     if command_line_arguments != []:
         input_filename = command_line_arguments[0]
@@ -294,35 +294,27 @@ def main():
     print("threshold_array done")
 
     dilated_array = computeDilation8Nbh3x3FlatSE(threshold_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
+    for count in range(6):
+        dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
     print("dilation x 7")
 
     eroded_array = computeErosion8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
-    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
-    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
-    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
-    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
-    eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
+    for count in range(6):
+        eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
     print("erosion x 7")
 
-    connectedComponents, dict = computeConnectedComponentLabeling(eroded_array, image_width, image_height)
-
+    connected_components, components_dictionary = computeConnectedComponentLabeling(eroded_array, image_width, image_height)
+    # find biggest connected component where ratio is < 5 and > 1.5
     done = False
     while not done:
-        max_key = max(dict, key=dict.get)
+        max_key = max(components_dictionary, key=components_dictionary.get)
         maxY = 0
         minY = image_height
         maxX = 0
         minX = image_width
         for r in range(image_height):
             for c in range(image_width):
-                if connectedComponents[r][c] == max_key:
+                if connected_components[r][c] == max_key:
                     if r > maxY:
                         maxY = r
                     elif r < minY:
@@ -333,15 +325,13 @@ def main():
                         minX = c
         ratio = (maxX - minX) / (maxY - minY)
         if ratio > 5 or ratio < 1.5:
-            dict[max_key] = 0
-            print("ratio", ratio)
+            components_dictionary[max_key] = 0
         else:
-            print("done ratio", ratio, max_key)
             done = True
+            print("ratio: ", ratio)
 
     px_array = greyscale_pixel_array
 
-    # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
     bbox_min_x = minX
     bbox_max_x = maxX
     bbox_min_y = minY
@@ -354,10 +344,6 @@ def main():
     rect = Rectangle((bbox_min_x, bbox_min_y), bbox_max_x - bbox_min_x, bbox_max_y - bbox_min_y, linewidth=1,
                      edgecolor='g', facecolor='none')
     axs1[1, 1].add_patch(rect)
-
-    # # Draw threshold = 150
-    # axs1[2, 1].set_title('150 threshold')
-    # axs1[2, 1].imshow(oneFivty, cmap='gray')
 
     # write the output image into output_filename, using the matplotlib savefig method
     extent = axs1[1, 1].get_window_extent().transformed(fig1.dpi_scale_trans.inverted())
