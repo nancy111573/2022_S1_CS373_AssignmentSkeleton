@@ -53,6 +53,7 @@ def createInitializedGreyscalePixelArray(image_width, image_height, initValue=0)
     new_array = [[initValue for x in range(image_width)] for y in range(image_height)]
     return new_array
 
+
 # Compute greyscale from RGB
 def getGreyScale(px_array_r, px_array_g, px_array_b, image_width, image_height):
     greyscale_pixel_array = createInitializedGreyscalePixelArray(image_width, image_height)
@@ -62,6 +63,7 @@ def getGreyScale(px_array_r, px_array_g, px_array_b, image_width, image_height):
             greyvalue = round(greyvalue + px_array_b[r][c] * 0.114)
             greyscale_pixel_array[r][c] = greyvalue
     return greyscale_pixel_array
+
 
 # Stretch to 0 - 255
 def stretch(anArray, image_height, image_width):
@@ -80,6 +82,7 @@ def stretch(anArray, image_height, image_width):
             for c in range(image_width):
                 stretched_array[r][c] = round((anArray[r][c] - minimum) * a)
     return stretched_array
+
 
 # computer standard deviation (5 x 5)
 def getStandardDeviation(stretched_array, image_width, image_height):
@@ -110,6 +113,7 @@ def getStandardDeviation(stretched_array, image_width, image_height):
             sd_array[r][c] = int(math.sqrt(temp))
     return sd_array
 
+
 # compute image by threshold to get high contrast area
 def getThresholdArray(anArray, image_width, image_height, threshold):
     threshold_array = createInitializedGreyscalePixelArray(image_width, image_height, 0.0)
@@ -121,13 +125,15 @@ def getThresholdArray(anArray, image_width, image_height, threshold):
                 threshold_array[r][c] = 255
     return threshold_array
 
+
 # get non-cumulative histogram from input image (255 bins)
 def computeHistogram(pixel_array, image_width, image_height):
     histogram = [0.0 for i in range(256)]
     for r in range(image_height):
         for c in range(image_width):
-            histogram[pixel_array[r][c]-1] += 1
+            histogram[pixel_array[r][c] - 1] += 1
     return histogram
+
 
 # EXTENSION: calculate adaptive threshold from input image
 def getThreshold(anArray, image_height, image_width):
@@ -146,8 +152,9 @@ def getThreshold(anArray, image_height, image_width):
         for bg in range(previous, len(Hq)):
             NumBackground += Hq[bg]
             background += qHq[bg]
-        threshold = int(math.ceil((objects/NumObjects + background/NumBackground)/2))
+        threshold = int(math.ceil((objects / NumObjects + background / NumBackground) / 2))
     return threshold
+
 
 # 3x3 dilation
 def computeDilation8Nbh3x3FlatSE(pixel_array, image_width, image_height):
@@ -165,16 +172,18 @@ def computeDilation8Nbh3x3FlatSE(pixel_array, image_width, image_height):
                         result[r][c] = 0
     return result
 
+
 # 3x3 erosion
 def computeErosion8Nbh3x3FlatSE(pixel_array, image_width, image_height):
     result = createInitializedGreyscalePixelArray(image_width, image_height)
-    for r in range(1, image_height-1):
-        for c in range(1, image_width-1):
-            if pixel_array[r][c] != 0 and pixel_array[r-1][c] != 0 and pixel_array[r+1][c] != 0:
-                if pixel_array[r][c-1] != 0 and pixel_array[r-1][c-1] != 0 and pixel_array[r+1][c-1] != 0:
-                    if pixel_array[r][c+1] != 0 and pixel_array[r-1][c+1] != 0 and pixel_array[r+1][c+1] != 0:
+    for r in range(1, image_height - 1):
+        for c in range(1, image_width - 1):
+            if pixel_array[r][c] != 0 and pixel_array[r - 1][c] != 0 and pixel_array[r + 1][c] != 0:
+                if pixel_array[r][c - 1] != 0 and pixel_array[r - 1][c - 1] != 0 and pixel_array[r + 1][c - 1] != 0:
+                    if pixel_array[r][c + 1] != 0 and pixel_array[r - 1][c + 1] != 0 and pixel_array[r + 1][c + 1] != 0:
                         result[r][c] = 1
     return result
+
 
 # get connected components
 def computeConnectedComponentLabeling(pixel_array, image_width, image_height):
@@ -238,7 +247,7 @@ def main():
     SHOW_DEBUG_FIGURES = True
 
     # this is the default input image filename
-    input_filename = "numberplate3.png"
+    input_filename = "numberplate6.png"
 
     if command_line_arguments != []:
         input_filename = command_line_arguments[0]
@@ -270,29 +279,18 @@ def main():
 
     greyscale_pixel_array = getGreyScale(px_array_r, px_array_g, px_array_b, image_width, image_height)
     print("greyscale done")
-
     stretched_array = stretch(greyscale_pixel_array, image_height, image_width)
     print("stretch done")
-
     sd_array = getStandardDeviation(stretched_array, image_width, image_height)
-    print("standard deviation done")
-
-    # stretch high contrast image to 0 to 255 range
     second_stretch = stretch(sd_array, image_height, image_width)
-    print("stretched again")
-
+    print("standard deviation once")
     sd_array = getStandardDeviation(second_stretch, image_width, image_height)
-    print("standard deviation done")
-
-    # stretch high contrast image to 0 to 255 range
     second_stretch = stretch(sd_array, image_height, image_width)
-    print("stretched again")
-
+    print("standard deviation twice")
     # calculate threshold
     threshold = getThreshold(second_stretch, image_height, image_width)
     print("calculated threshold = ", threshold)
-
-    threshold_array = getThresholdArray(second_stretch, image_width, image_height, 150)
+    threshold_array = getThresholdArray(second_stretch, image_width, image_height, threshold)
     print("threshold_array done")
 
     dilated_array = computeDilation8Nbh3x3FlatSE(threshold_array, image_width, image_height)
@@ -302,11 +300,7 @@ def main():
     dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
     dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
     dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    dilated_array = computeDilation8Nbh3x3FlatSE(dilated_array, image_width, image_height)
-    print("dilation x 11")
+    print("dilation x 7")
 
     eroded_array = computeErosion8Nbh3x3FlatSE(dilated_array, image_width, image_height)
     eroded_array = computeErosion8Nbh3x3FlatSE(eroded_array, image_width, image_height)
@@ -318,25 +312,40 @@ def main():
     print("erosion x 7")
 
     connectedComponents, dict = computeConnectedComponentLabeling(eroded_array, image_width, image_height)
-    print(dict)
 
-    max_key = max(dict, key=dict.get)
-    for r in range(image_height):
-        for c in range(image_width):
-            if connectedComponents[r][c] != max_key:
-                connectedComponents[r][c] = 0
+    done = False
+    while not done:
+        max_key = max(dict, key=dict.get)
+        maxY = 0
+        minY = image_height
+        maxX = 0
+        minX = image_width
+        for r in range(image_height):
+            for c in range(image_width):
+                if connectedComponents[r][c] == max_key:
+                    if r > maxY:
+                        maxY = r
+                    elif r < minY:
+                        minY = r
+                    if c > maxX:
+                        maxX = c
+                    elif c < minX:
+                        minX = c
+        ratio = (maxX - minX) / (maxY - minY)
+        if ratio > 5 or ratio < 1.5:
+            dict[max_key] = 0
+            print("ratio", ratio)
+        else:
+            print("done ratio", ratio, max_key)
+            done = True
 
-    #  STUDENT IMPLEMENTATION END
-
-    px_array = connectedComponents
+    px_array = greyscale_pixel_array
 
     # compute a dummy bounding box centered in the middle of the input image, and with as size of half of width and height
-    center_x = image_width / 2.0
-    center_y = image_height / 2.0
-    bbox_min_x = center_x - image_width / 4.0
-    bbox_max_x = center_x + image_width / 4.0
-    bbox_min_y = center_y - image_height / 4.0
-    bbox_max_y = center_y + image_height / 4.0
+    bbox_min_x = minX
+    bbox_max_x = maxX
+    bbox_min_y = minY
+    bbox_max_y = maxY
 
     # Draw a bounding box as a rectangle into the input image
     # Final image of detection
