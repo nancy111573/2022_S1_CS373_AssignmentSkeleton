@@ -8,6 +8,10 @@ from matplotlib.patches import Rectangle
 # import our basic, light-weight png reader library
 import imageIO.png
 
+'''
+A licence plate detection program using adaptive thresholding,  
+the step 'get high contrast region by computing standard deviation' is done twice to get more accurate results
+'''
 
 # this function reads an RGB color png file and returns width, height, as well as pixel arrays for r,g,b
 def readRGBImageToSeparatePixelArrays(input_filename):
@@ -238,9 +242,9 @@ def computeConnectedComponentLabeling(pixel_array, image_width, image_height):
     return result, components
 
 
-# This is our code skeleton that performs the license plate detection.
-# Feel free to try it on your own images of cars, but keep in mind that with our algorithm developed in this lecture,
-# we won't detect arbitrary or difficult to detect license plates!
+# License plate detection in this function follows structure given in recording,
+# but the step get high contrast region by computing standard deviation is done twice.
+# Adaptive thresholding is also used instead of a set threshold
 def main():
     command_line_arguments = sys.argv[1:]
 
@@ -281,15 +285,16 @@ def main():
     print("greyscale done")
     stretched_array = stretch(greyscale_pixel_array, image_height, image_width)
     print("stretch done")
+    # standard deviation done twice to get higher contrast
     sd_array = getStandardDeviation(stretched_array, image_width, image_height)
     second_stretch = stretch(sd_array, image_height, image_width)
     print("standard deviation once")
     sd_array = getStandardDeviation(second_stretch, image_width, image_height)
     second_stretch = stretch(sd_array, image_height, image_width)
     print("standard deviation twice")
-    # calculate threshold
+    # calculate adaptive threshold
     threshold = getThreshold(second_stretch, image_height, image_width)
-    print("calculated threshold = ", threshold)
+    print("calculated adaptive threshold = ", threshold)
     threshold_array = getThresholdArray(second_stretch, image_width, image_height, threshold)
     print("threshold_array done")
 
